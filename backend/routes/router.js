@@ -6,6 +6,10 @@ import { buyTicket, getMyTickets } from "../controllers/ticket.js";
 
 export const Router = express.Router();
 
+Router.route('/').get((req, res) => {
+    res.send("Hello Dear Fella!")
+})
+
 // Auth
 Router.route('/auth/userData').get(verifyToken, getUserData);
 // 
