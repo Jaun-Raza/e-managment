@@ -1,5 +1,5 @@
 import { Event } from '../models/Event.js';
-import { User } from '../models/user.js';
+import { User } from '../models/User.js';
 
 import nodemailer from 'nodemailer';
 import cron from 'node-cron'

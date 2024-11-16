@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt'
 import cron from 'node-cron'
 
 // User Model
-import { User } from '../models/user.js';
+import { User } from '../models/User.js';
 
 export async function signUp(req, res) {
     const { username, email, password } = req.body;

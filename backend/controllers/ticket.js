@@ -1,5 +1,5 @@
 import { Event } from '../models/Event.js';
-import { User } from '../models/user.js';
+import { User } from '../models/User.js';
 
 export async function buyTicket(req, res) {
     const { id, token, isVip } = req.body;
