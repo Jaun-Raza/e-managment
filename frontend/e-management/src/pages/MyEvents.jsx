@@ -89,30 +89,37 @@ const MyEvents = ({ token }) => {
             {errorText && <ActionPopup type="error">{errorText}</ActionPopup>}
             <CreateButton onClick={() => setPopupType('create')}>Create Event</CreateButton>
             <EventList>
-                {data?.data?.events.map((event) => (
-                    <EventCard key={event._id}>
-                        <CardTitle>{event.eventDetails.title}</CardTitle>
-                        <CardActions>
-                            <ActionButton onClick={() => {
-                                setId(event._id);
-                                setPopupType('details');
-                            }}>
-                                View Attendees
-                            </ActionButton>
-                            <TrashIcon onClick={() => handleDeleteEvent(event._id)}>🗑️</TrashIcon>
-                        </CardActions>
-                    </EventCard>
-                ))}
+                {
+                    data?.data?.events?.length === 0 ? <h2>You don't have any events.</h2> : data?.data?.events.map((event) => (
+                        <EventCard key={event._id}>
+                            <CardTitle>{event.eventDetails.title}</CardTitle>
+                            <CardActions>
+                                <ActionButton onClick={() => {
+                                    setId(event._id);
+                                    setPopupType('details');
+                                }}>
+                                    View Attendees
+                                </ActionButton>
+                                <TrashIcon onClick={() => handleDeleteEvent(event._id)}>🗑️</TrashIcon>
+                            </CardActions>
+                        </EventCard>
+                    ))
+                }
             </EventList>
-            <Pagination>
-                <button onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1}>
-                    Previous
-                </button>
-                <span>Page {page} of {data?.data?.totalPages}</span>
-                <button onClick={() => setPage((prev) => (prev < data?.data?.totalPages ? prev + 1 : prev))} disabled={page === data?.data?.totalPages}>
-                    Next
-                </button>
-            </Pagination>
+            {
+                data?.data?.events?.length !== 0 && (
+                    <Pagination>
+                        <button onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1}>
+                            Previous
+                        </button>
+                        <span>Page {page} of {data?.data?.totalPages}</span>
+                        <button onClick={() => setPage((prev) => (prev < data?.data?.totalPages ? prev + 1 : prev))} disabled={page === data?.data?.totalPages}>
+                            Next
+                        </button>
+                    </Pagination>
+                )
+            }
+
 
             {popupType === 'create' && (
                 <Popup>
@@ -217,6 +224,12 @@ const EventList = styled.div`
     display: flex;
     flex-direction: column;
     gap: 20px;
+
+    h2 {
+        text-align: center;
+        font-size: 2.5rem;
+        padding: 5em;
+    }
 `;
 
 const EventCard = styled.div`
@@ -369,7 +382,7 @@ const EventForm = ({ onSubmit, eventDetails }) => {
         date: '',
         time: '',
         location: '',
-        eventSlots: 0,
+        eventSlots: 1,
     });
 
     const handleSubmit = (e) => {
@@ -384,6 +397,7 @@ const EventForm = ({ onSubmit, eventDetails }) => {
                 <Input
                     type="text"
                     value={formData.title}
+                    maxLength={10}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
             </InputField>
@@ -392,6 +406,7 @@ const EventForm = ({ onSubmit, eventDetails }) => {
                 <Label>Description:</Label>
                 <TextArea
                     value={formData.description}
+                    maxLength={70}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
             </InputField>

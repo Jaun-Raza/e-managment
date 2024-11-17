@@ -33,7 +33,7 @@ const Home = ({ token }) => {
 
   const handleLogout = async () => {
     await Cookies.remove('tok-uid');
-    navigate('/auth');  
+    window.location.href='/auth'
   };
 
   useEffect(() => {

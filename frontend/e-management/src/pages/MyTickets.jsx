@@ -5,36 +5,38 @@ import { useGetMyTicketsQuery } from '../RTK/ApiRequests';
 import Loader from '../components/Loader';
 
 const MyTickets = ({ token }) => {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const [page, setPage] = useState(1);
     const { data, isLoading, isError } = useGetMyTicketsQuery({ token, page });
 
     if (isLoading) return <Loader />;
     if (isError || !data?.success) return <Wrapper>Error fetching tickets</Wrapper>;
-    if (data?.data?.events.length === 0) return <Wrapper>No tickets found</Wrapper>;
 
     return (
         <Wrapper>
             <GoBackButton onClick={() => navigate('/')}>Go Back</GoBackButton>
             <Title>My Tickets</Title>
             <TicketList>
-                {data?.data?.events.map((event) => (
-                    <TicketCard key={event._id}>
-                        <CardTitle>{event.eventDetails.title}</CardTitle>
-                        <CardInfo>
-                            <p>{event.eventDetails.description}</p>
-                            <p><strong>Date:</strong> {event.eventDetails.date}</p>
-                            <p><strong>Time:</strong> {event.eventDetails.time}</p>
-                            <p><strong>Location:</strong> {event.eventDetails.location}</p>
-                            <p><strong>Slots:</strong> {event.eventDetails.eventSlots}</p>
-                            <p style={{
-                                color: event.eventDetails.eventStatus === 'pending' ? '#ffc107' : '#28a745'
-                            }}>{event.eventDetails.eventStatus}</p>
-                        </CardInfo>
-                    </TicketCard>
-                ))}
+                {
+                    data?.data?.events.length === 0 ? <h2>You don't have any tickets.</h2> : data?.data?.events.map((event) => (
+                        <TicketCard key={event._id}>
+                            <CardTitle>{event.eventDetails.title}</CardTitle>
+                            <CardInfo>
+                                <p>{event.eventDetails.description}</p>
+                                <p><strong>Date:</strong> {event.eventDetails.date}</p>
+                                <p><strong>Time:</strong> {event.eventDetails.time}</p>
+                                <p><strong>Location:</strong> {event.eventDetails.location}</p>
+                                <p><strong>Slots:</strong> {event.eventDetails.eventSlots}</p>
+                                <p style={{
+                                    color: event.eventDetails.eventStatus === 'pending' ? '#ffc107' : '#28a745'
+                                }}>{event.eventDetails.eventStatus}</p>
+                            </CardInfo>
+                        </TicketCard>
+                    ))
+                }
             </TicketList>
-            <Pagination>
+            {
+                data?.data?.events.length > 0 && <Pagination>
                 <button onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1}>
                     Previous
                 </button>
@@ -43,6 +45,7 @@ const MyTickets = ({ token }) => {
                     Next
                 </button>
             </Pagination>
+            }
         </Wrapper>
     );
 };
@@ -85,6 +88,12 @@ const TicketList = styled.div`
     display: flex;
     flex-direction: column;
     gap: 20px;
+
+    h2 {
+        text-align: center;
+        font-size: 2rem;
+        padding: 15rem;
+    }
 `;
 
 const TicketCard = styled.div`

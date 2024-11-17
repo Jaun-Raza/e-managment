@@ -7,7 +7,17 @@ import cron from 'node-cron'
 export async function createEvent(req, res) {
     const { token, eventDetails } = req.body;
 
-    const user = await User.findOne({ "tokens.token": token }).select("email username")
+    const user = await User.findOne({ "tokens.token": token }).select("email username");
+
+    const currentDate = new Date();
+    const currentDay = currentDate.toISOString().toString().slice(8, 10);
+    const currentMonth = currentDate.toISOString().toString().slice(5, 7);
+    const currentYear = currentDate.toISOString().toString().slice(0, 4);
+
+    const eventDay = eventDetails.date.slice(8, 10);
+    const eventMonth = eventDetails.date.slice(5, 7);
+    const eventYear = eventDetails.date.slice(0, 4);
+
 
     const newEvent = new Event({
         organizerDetails: {
@@ -18,7 +28,11 @@ export async function createEvent(req, res) {
     });
 
     try {
-        newEvent.save();
+        if (eventDay >= currentDay && eventMonth >= currentMonth && eventYear >= currentYear) {
+            newEvent.save();
+        } else {
+            return res.status(400).json({ success: false, error: "Event date cannot be in the past" })
+        }
         return res.status(200).json({ success: true, message: "Event is successfully created." });
     } catch (error) {
         console.log(err)
@@ -28,19 +42,42 @@ export async function createEvent(req, res) {
 
 export async function editEvent(req, res) {
     const { id, eventDetails } = req.body;
+    const header = req.headers['authorization'];
+
+    const token = header.split('Bearer ')[1]
+
+    const user = await User.findOne({ "tokens.token": token }).select("email");
+    const eventOrganizerDetails = await Event.findOne({_id: id}).select("organizerDetails");
+
+    if (user.email !== eventOrganizerDetails.organizerDetails.email) {
+        return res.status(403).json({ success: false, error: "You are not the owner of it"});
+    } 
+    
+    const currentDate = new Date();
+    const currentDay = currentDate.toISOString().toString().slice(8, 10);
+    const currentMonth = currentDate.toISOString().toString().slice(5, 7);
+    const currentYear = currentDate.toISOString().toString().slice(0, 4);
+
+    const eventDay = eventDetails.date.slice(8, 10);
+    const eventMonth = eventDetails.date.slice(5, 7);
+    const eventYear = eventDetails.date.slice(0, 4);
 
     try {
-        await Event.findOneAndUpdate(
-            { _id: id },
-            {
-                $set: {
-                    [`eventDetails`]: eventDetails
-                }
-            },
-            { new: true }
-        )
+        if (eventDay >= currentDay && eventMonth >= currentMonth && eventYear >= currentYear) {
+            await Event.findOneAndUpdate(
+                { _id: id },
+                {
+                    $set: {
+                        [`eventDetails`]: eventDetails
+                    }
+                },
+                { new: true }
+            )
+            return res.status(200).json({ success: true, message: "Event is successfully updated." });
+        } else {
+            return res.status(400).json({ success: false, error: "Event date cannot be in the past" })
+        }
 
-        return res.status(200).json({ success: true, message: "Event is successfully updated." });
     } catch (err) {
         console.log(err)
         return res.status(500).json({ success: false, error: "Something went wrong, try again later." });
@@ -49,6 +86,16 @@ export async function editEvent(req, res) {
 
 export async function deleteEvent(req, res) {
     const { eventId } = req.body;
+
+    const header = req.headers['authorization'];
+    const token = header.split('Bearer ')[1]
+
+    const user = await User.findOne({ "tokens.token": token }).select("email");
+    const eventOrganizerDetails = await Event.findOne({_id: eventId}).select("organizerDetails");
+
+    if (user.email !== eventOrganizerDetails.organizerDetails.email) {
+        return res.status(403).json({ success: false, error: "You are not the owner of it"});
+    } 
 
     try {
         await Event.findOneAndDelete({ _id: eventId });
@@ -90,6 +137,7 @@ export async function getMyEvents(req, res) {
 
     try {
         const user = await User.findOne({ "tokens.token": token }).select("email")
+        console.log(user.email)
         const events = await Event
             .find({ "organizerDetails.email": user.email })
             .sort({ createdAt: -1 })
@@ -139,11 +187,11 @@ cron.schedule('0 0 * * * *', async () => {
 
     oneDayAhead.setHours(0, 0, 0, 0);
 
-    const oneDayAheadISO = oneDayAhead.toLocaleString();  
+    const oneDayAheadISO = oneDayAhead.toLocaleString();
     const oneDayAheadDate = `${oneDayAheadISO.slice(6, 10)}-${oneDayAheadISO.slice(0, 2)}-${oneDayAheadISO.slice(3, 5)}`;
 
     try {
-        const oneDayAheadEventsAttendeesEmails = await Event.find({"eventDetails.date": oneDayAheadDate})
+        const oneDayAheadEventsAttendeesEmails = await Event.find({ "eventDetails.date": oneDayAheadDate })
 
         const emailConfig = {
             service: 'gmail',
@@ -157,7 +205,7 @@ cron.schedule('0 0 * * * *', async () => {
         };
 
         const transporter = nodemailer.createTransport(emailConfig);
-        
+
         for (const events of oneDayAheadEventsAttendeesEmails) {
             const sendEmailPromises = events.attendees.map(async (obj) => {
                 const message = {
@@ -184,11 +232,11 @@ cron.schedule('0 0 * * * *', async () => {
                         </html>
                     `
                 };
-                
-    
+
+
                 return transporter.sendMail(message);
             });
-    
+
             await Promise.all(sendEmailPromises);
         }
 
@@ -204,8 +252,7 @@ cron.schedule('0 0 * * * *', async () => {
     const currentDate = new Date();
 
     try {
-        
-        await Event.find({"eventDetails.date": currentDate.toISOString().slice(0, 10)}).then((foundEvents) => {
+        await Event.find({ "eventDetails.date": currentDate.toISOString().slice(0, 10) }).then((foundEvents) => {
             for (const events of foundEvents) {
                 events.eventDetails.eventStatus = "Completed"
                 events.save();
